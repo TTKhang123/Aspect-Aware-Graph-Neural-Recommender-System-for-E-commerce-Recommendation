@@ -16,7 +16,7 @@ The repository is designed for e-commerce review datasets, such as Amazon Electr
 
 - [Data Analysis](DATA_ANALYSIS.md)
 - [Important Limitations](IMPORTANT_LIMITATIONS.md)
-- [Architecture](docs/Aspect-Aware Graph Neural Recommender System for Cold-Start E-commerce Recommendation.docx)
+- (docs/Aspect-Aware Graph Neural Recommender System for Cold-Start E-commerce Recommendation.docx)
 
 ## What this project implements
 
