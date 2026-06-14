@@ -440,7 +440,6 @@ This means the full evaluation includes about 16–20% cold users and 4–6% col
 
 ## Notes
 
-- `run_flow.txt` is a useful reference, but it contains older command examples and a typo (`buil_model_ready_data.py`).
 - The correct execution pattern is `python -m scripts.<script>`.
 - `config/config.yaml` is the repository's source of truth.
 - ABSA output chunks are aggregated into item-level aspect scores by the model-ready builder.
