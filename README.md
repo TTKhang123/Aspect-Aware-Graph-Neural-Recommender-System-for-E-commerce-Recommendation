@@ -368,20 +368,6 @@ Options for `recommend_users_for_new_item`:
 
 ---
 
-## Configuration reference
-
-The main config is `config/config.yaml`.
-
-Important sections:
-
-- `aspect_lightgcn.paths` — model-ready and output directories
-- `aspect_lightgcn.columns` — user/item/rating/aspect columns
-- `aspect_lightgcn.ablation` — ablation variant definitions
-- `aspect_lightgcn.data` — evaluation settings such as `max_eval_users` and `num_negatives_eval`
-- `aspect_lightgcn.model` — LightGCN dimensions, fusion, and dropout
-
----
-
 ## Model comparison
 
 | Model family      | Model / variant                  | Purpose                       | Description                                                                    |
