@@ -12,12 +12,6 @@ The repository is designed for e-commerce review datasets, such as Amazon Electr
 
 ---
 
-## Project Documentation
-
-- [Data Analysis](DATA_ANALYSIS.md)
-- [Important Limitations](IMPORTANT_LIMITATIONS.md)
-- (docs/Aspect-Aware Graph Neural Recommender System for Cold-Start E-commerce Recommendation.docx)
-
 ## What this project implements
 
 - LightGCN collaborative filtering backbone
@@ -29,6 +23,14 @@ The repository is designed for e-commerce review datasets, such as Amazon Electr
 - Beyond-accuracy metrics: `Coverage@K`, `Novelty@K`, `Diversity@K`
 - Data preprocessing for model-ready parquet datasets
 - Explainable inference with aspect-based recommendations
+
+---
+
+## Project Documentation
+
+- [Data Analysis](DATA_ANALYSIS.md)
+- [Important Limitations](IMPORTANT_LIMITATIONS.md)
+- (docs/Aspect-Aware Graph Neural Recommender System for Cold-Start E-commerce Recommendation.docx)
 
 ---
 
@@ -175,12 +177,62 @@ Generate a sample list of known warm users first:
 python -m scripts.recommend --config config/config.yaml --checkpoint outputs/aspect_lightgcn/lightgcn_aspects_masks_support/best_model.pt --show-sample-users
 ```
 
+**Demo output:**
+
+```
+[Data] active_ablation = lightgcn_aspects_masks_support
+[Data] score_cols   = ['item_quality', 'item_value', 'item_design', 'item_usability', 'item_durability']
+[Data] mask_cols    = ['mask_quality', 'mask_value', 'mask_design', 'mask_usability', 'mask_durability']
+[Data] support_cols = ['support_quality', 'support_value', 'support_design', 'support_usability', 'support_durability', 'item_support']
+
+Sample known users:
+       user_id  user_idx  train_interactions  avg_rating
+ A680RUE1FDO8B    616343                 516    4.511628
+A3OXHLG6DIBRW8    560991                 504    4.488095
+  ADLVFFE4VBT8    659051                 480    4.329167
+A1X1CEGHTHMBL1    191654                 429    4.743590
+ A5JLAU2ARJ0BO    612297                 426    3.884977
+```
+
 This command prints a sample list of users that exist in the warm-user mapping, so you can choose a valid `--user-id` for recommendation.
 
 Then run recommendation for a chosen user:
 
 ```bash
-python -m scripts.recommend --config config/config.yaml --checkpoint outputs/aspect_lightgcn/lightgcn_aspects_masks_support/best_model.pt --user-id <USER_ID> --top-k 10
+python -m scripts.recommend --config config/config.yaml --checkpoint outputs/aspect_lightgcn/lightgcn_aspects_masks_support/best_model.pt --user-id A12DQZKRKTNF5E --top-k 10
+```
+
+**Demo output:**
+
+```
+Top recommendations:
+ rank    item_id title brand    score  quality    value   design  usability  durability                                                                        explanation
+    1 B0019HL8Q8  None  None 9.526103 4.310935 4.054097 4.151699   3.729724    3.852641     Recommended because this item has strong quality=4.31, design=4.15, value=4.05
+    2 B0019EHU8G  None  None 9.463926 4.311523 4.069416 4.134214   3.727598    3.841258     Recommended because this item has strong quality=4.31, design=4.13, value=4.07
+    3 B00DIF2BO2  None  None 9.452283 4.093720 3.992204 3.532543   3.770660    4.061075 Recommended because this item has strong quality=4.09, durability=4.06, value=3.99
+    4 B005DKZTMG  None  None 9.336736 4.090071 3.728776 3.786608   3.527504    3.323944     Recommended because this item has strong quality=4.09, design=3.79, value=3.73
+    5 B006W8U2MU  None  None 9.184413 4.232787 4.142042 4.211597   3.542588    3.849541     Recommended because this item has strong quality=4.23, design=4.21, value=4.14
+```
+
+For **cold-start users** (user_id not in training set):
+
+```bash
+python -m scripts.recommend --config config/config.yaml --checkpoint outputs/aspect_lightgcn/lightgcn_aspects_masks_support/best_model.pt --user-id new_user --top-k 10
+```
+
+**Demo output (cold-start fallback):**
+
+```
+Cold-start user detected: user_id not found in mapping.
+
+Fallback 1: Top popular items
+   item_id  item_idx  popularity  avg_rating  quality    value   design  usability  durability
+B003L1ZYYW     65091        8388    4.789342 4.329024 4.187730 3.652460   3.644786    3.790415
+B0019HL8Q8     42356        7274    4.775914 4.310935 4.054097 4.151699   3.729724    3.852641
+B0019EHU8G     42321        6913    4.771734 4.311523 4.069416 4.134214   3.727598    3.841258
+
+Fallback 2: Top items by each criteria
+...
 ```
 
 Behavior differs based on whether the user is known or cold-start:
@@ -206,7 +258,7 @@ Options:
 
 ### 7. Cold-start item recommendation
 
-Build an item-content LSH index first:
+#### Step 1: Build an item-content LSH index
 
 ```bash
 python -m scripts.build_user_content_lsh_index --train-path data/processed/model_ready/train_model.parquet --metadata data/processed/metadata_filtered.parquet --output-dir outputs/content_lsh
@@ -220,10 +272,78 @@ This step does the following:
 - creates user content profiles by averaging embeddings of positively rated items per user
 - fits a Random Hyperplane LSH index over user content profiles
 
-Then recommend users for a new cold-start item:
+#### Step 2: Recommend users for a new cold-start item
+
+**⚠️ IMPORTANT: JSON file preparation**
+
+Create a JSON file in `data/examples/` with the following required fields:
+
+```json
+{
+  "asin": "NEW001",
+  "title": "Wireless Bluetooth Noise Cancelling Headphones",
+  "brand": "ExampleBrand",
+  "categories": [["Electronics", "Headphones", "Over-Ear Headphones"]],
+  "feature": [
+    "Active noise cancellation",
+    "40 hours battery life",
+    "Comfortable over-ear design",
+    "Fast charging"
+  ],
+  "description": [
+    "Premium wireless headphones with deep bass, durable build, and comfortable ear cushions for daily use."
+  ],
+  "price": 79.99,
+  "salesRank": {
+    "Electronics": 1520
+  },
+  "similar": {
+    "also_viewed": ["B001", "B002"],
+    "also_bought": ["B003"]
+  }
+}
+```
+
+**Required fields** (must be present):
+
+- `asin` — unique item ID
+- `title` — product title (text)
+- `brand` — brand name (text)
+- `categories` — nested list of category hierarchy (list)
+- `feature` — list of bullet-point features (list of strings)
+- `description` — list of description paragraphs (list of strings)
+- `price` — product price (number)
+
+**Optional fields:**
+
+- `salesRank`, `similar` — used for enriching content profile if available
+
+**If a field is missing:**
+
+- `title`, `brand`, `feature`, `description` → content embedding will be weaker/incomplete
+- `asin`, `categories`, `price` → item cannot be processed or may cause error
+
+Example: If you provide only `title` and `description`, the content profile will miss brand and feature information, resulting in less accurate user similarity matching.
 
 ```bash
-python -m scripts.recommend_users_for_new_item --item-json examples/new_item.json --index-dir outputs/content_lsh --top-k-users 20
+python -m scripts.recommend_users_for_new_item --item-json data/examples/new_item.json --index-dir outputs/content_lsh --top-k-users 20
+```
+
+**Demo output:**
+
+```
+Nearest users for this cold-start item:
+ rank        user_id  user_idx  similarity
+    1 A35HOF2F9UK35X    448395    0.830894
+    2 A1U3N1WJGBMDB9    174788    0.780035
+    3 A17GWADBH6ZZ6D     43572    0.740397
+    4 A3W3029Q7MQRDB    602262    0.676721
+    5  AE4PBCRPRGE01    662008    0.664099
+    6 A1JI3NLAC2KNIS    113290    0.664099
+    7 A3NWY65EC4FFU5    555180    0.658684
+    8 A1WOZG36FLK7Y4    189709    0.653798
+    9 A1PB3G548WPFBV    147109    0.630704
+   10 A3H26D98PTXN1K    515534    0.614502
 ```
 
 This command encodes the new item metadata into the same content embedding space, then returns the top users whose historical item preferences are most similar to the new item. It is a cold-start item strategy, not an item ranking from the model. The cold-item route is user retrieval with metadata similarity, not a unified cold-item item-ranking model.
@@ -242,9 +362,23 @@ Options for `build_user_content_lsh_index`:
 
 Options for `recommend_users_for_new_item`:
 
-- `--item-json` — JSON file for new item metadata
+- `--item-json` — JSON file for new item metadata (path should be `data/examples/new_item.json` or similar)
 - `--index-dir` — LSH index directory
 - `--top-k-users` — number of similar users to retrieve
+
+---
+
+## Configuration reference
+
+The main config is `config/config.yaml`.
+
+Important sections:
+
+- `aspect_lightgcn.paths` — model-ready and output directories
+- `aspect_lightgcn.columns` — user/item/rating/aspect columns
+- `aspect_lightgcn.ablation` — ablation variant definitions
+- `aspect_lightgcn.data` — evaluation settings such as `max_eval_users` and `num_negatives_eval`
+- `aspect_lightgcn.model` — LightGCN dimensions, fusion, and dropout
 
 ---
 
@@ -320,6 +454,7 @@ This means the full evaluation includes about 16–20% cold users and 4–6% col
 
 ## Notes
 
+- `run_flow.txt` is a useful reference, but it contains older command examples and a typo (`buil_model_ready_data.py`).
 - The correct execution pattern is `python -m scripts.<script>`.
 - `config/config.yaml` is the repository's source of truth.
 - ABSA output chunks are aggregated into item-level aspect scores by the model-ready builder.
