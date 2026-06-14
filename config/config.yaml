@@ -1,0 +1,335 @@
+# Data Configuration
+data:
+  raw_data_path: "data/raw/Electronics.json.gz"
+  metadata_path: "data/raw/meta_Electronics.json.gz"
+
+  processed_dir: "data/processed"
+  model_ready_dir: "data/processed/model_ready"
+
+  temp_reviews_dir: "data/temp_reviews"
+  temp_metadata_dir: "data/temp_metadata"
+
+  evaluation_metrics: "data/evaluation_metrics"
+
+  min_reviews_per_user: 5
+  min_reviews_per_item: 5
+
+# ABSA Configuration
+absa:
+  model_name: "nlptown/bert-base-multilingual-uncased-sentiment"
+  aspects:
+    - quality
+    - value
+    - design
+    - usability
+    - durability
+  max_length: 512
+  batch_size: 16
+
+# Traditional Matrix Factorization Baseline
+mf:
+  embedding_dim: 64
+  learning_rate: 0.001
+  weight_decay: 0.00001
+  batch_size: 4096
+  epochs: 10
+  patience: 3
+
+# Neural Collaborative Filtering
+# ncf:
+#   embedding_dim: 64
+#   hidden_dims: [128, 64, 32]
+#   dropout: 0.2
+#   learning_rate: 0.001
+#   weight_decay: 0.00001
+#   batch_size: 4096
+#   epochs: 10
+#   patience: 3
+
+ncf:
+  embedding_dim: 32
+  hidden_dims: [64, 32]
+  dropout: 0.4
+  learning_rate: 0.0005
+  weight_decay: 0.0003
+  batch_size: 4096
+  epochs: 20
+  patience: 5
+
+# bias baseline
+bias:
+  learning_rate: 0.001
+  weight_decay: 0.00001
+  batch_size: 4096
+  epochs: 10
+  patience: 3
+
+# Multi-Criteria Matrix Factorization (simple Matrix Factorization + multi-criteria)
+mcmf:
+  embedding_dim: 64
+  n_criteria: 5
+  learning_rate: 0.001
+  weight_decay: 0.00001
+  batch_size: 4096
+  epochs: 10
+  patience: 3
+  lambda_overall: 1.0
+  lambda_criteria: 0.3
+
+# proposal model
+mcdcf:
+  embedding_dim: 64
+  n_criteria: 5
+  hidden_dims: [256, 128, 64]
+  ncf_hidden_dims: [128, 64, 32]
+  attention_dim: 64
+  dropout: 0.3
+  learning_rate: 0.001
+  weight_decay: 0.00001
+  batch_size: 2048
+  epochs: 10
+  patience: 3
+  lambda_overall: 1.0
+  lambda_criteria: 0.1
+
+# new proposal model
+# cr_neumf:
+#   dense_dim: 16
+#   n_criteria: 5
+#   embedding_dim: 64
+#   gmf_dim: 64
+#   mlp_hidden_dims: [256, 128, 64]
+#   criteria_hidden_dim: 64
+#   dropout: 0.3
+#   learning_rate: 0.0005
+#   weight_decay: 0.00001
+#   batch_size: 4096
+#   epochs: 10
+#   patience: 3
+#   lambda_overall: 1.0
+#   lambda_criteria: 0.01
+#   alpha_init: 0.05
+
+cr_neumf:
+  dense_dim: 10
+  n_criteria: 5
+  embedding_dim: 16
+  gmf_dim: 16
+  mlp_hidden_dims: [64, 32]
+  criteria_hidden_dim: 16
+  dropout: 0.4
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  batch_size: 4096
+  epochs: 30
+  patience: 5
+  lambda_overall: 1.0
+  lambda_criteria: 0.01
+  alpha_init: 0.01
+
+# DeepFM
+deepfm:
+  dense_dim: 10
+  embedding_dim: 32
+  hidden_dims: [256, 128, 64]
+  dropout: 0.2
+  learning_rate: 0.001
+  weight_decay: 0.00001
+  batch_size: 4096
+  epochs: 10
+  patience: 3
+
+# Wide & Deep
+wide_deep:
+  embedding_dim: 32
+  deep_hidden_dims: [256, 128, 64]
+  dropout: 0.2
+
+  learning_rate: 0.001
+  batch_size: 4096
+  epochs: 10
+
+# Training Configuration
+training:
+  device: "cuda"
+  seed: 42
+
+  num_workers: 0
+
+  save_dir: "models"
+  log_dir: "logs"
+
+  save_frequency: 1
+  early_stopping_patience: 10
+
+# Evaluation
+evaluation:
+  rating_metrics:
+    - rmse
+    - mae
+
+  ranking_metrics:
+    - precision
+    - recall
+    - ndcg
+    - map
+
+  top_k:
+    - 5
+    - 10
+    - 20
+
+aspect_lightgcn:
+  seed: 42
+
+  paths:
+    model_ready_dir: "data/processed/model_ready"
+    output_dir: "outputs/aspect_lightgcn"
+
+    train_file: "train_model.parquet"
+    val_file: "val_warm_model.parquet"
+    test_file: "test_warm_model.parquet"
+
+    val_full_file: "val_model.parquet"
+    test_full_file: "test_model.parquet"
+
+  columns:
+    user: "user_idx"
+    item: "item_idx"
+    rating: "rating"
+
+    aspect_scores:
+      - "item_quality"
+      - "item_value"
+      - "item_design"
+      - "item_usability"
+      - "item_durability"
+
+    aspect_masks:
+      - "mask_quality"
+      - "mask_value"
+      - "mask_design"
+      - "mask_usability"
+      - "mask_durability"
+
+    aspect_supports:
+      - "support_quality"
+      - "support_value"
+      - "support_design"
+      - "support_usability"
+      - "support_durability"
+      - "item_support"
+    #aspect_supports: []
+
+  ablation:
+    lightgcn_only:
+      use_aspect_scores: False
+      use_aspect_masks: False
+      use_aspect_supports: False
+
+    lightgcn_aspects:
+      use_aspect_scores: True
+      use_aspect_masks: False
+      use_aspect_supports: False
+
+    lightgcn_aspects_masks:
+      use_aspect_scores: True
+      use_aspect_masks: True
+      use_aspect_supports: False
+
+    lightgcn_aspects_masks_support:
+      use_aspect_scores: True
+      use_aspect_masks: True
+      use_aspect_supports: True
+
+  data:
+    positive_threshold: 4.0
+    max_train_rows: null
+    max_eval_users: 2000
+    num_negatives_eval: 100
+    filter_seen_items: true
+
+  model:
+    embedding_dim: 64
+    n_layers: 3
+    aspect_hidden_dim: 128
+    dropout: 0.1
+    fusion: "gated_residual"
+    use_item_bias: true
+    use_user_bias: true
+
+  training:
+    device: "cuda"
+
+    epochs: 30
+    batch_size: 8192
+
+    learning_rate: 0.001
+    weight_decay: 1.0e-5
+
+    num_negatives_train: 1
+
+    bpr_weight: 1.0
+    l2_reg_weight: 1.0e-6
+
+    patience: 5
+    num_workers: 0
+
+    grad_clip_norm: 5.0
+
+  metrics:
+    top_k:
+      - 5
+      - 10
+      - 20
+
+    diversity_feature: "aspect_semantic"
+
+ranking_baselines:
+  seed: 42
+
+  paths:
+    model_ready_dir: "data/processed/model_ready"
+    output_dir: "outputs/ranking_baselines"
+
+    train_file: "train_model.parquet"
+    val_file: "val_warm_model.parquet"
+    test_file: "test_warm_model.parquet"
+
+  data:
+    positive_threshold: 4.0
+    max_eval_users: 2000
+    num_negatives_eval: 100
+    filter_seen_items: true
+
+  training:
+    device: "cuda"
+    epochs: 30
+    batch_size: 8192
+    learning_rate: 0.001
+    weight_decay: 1.0e-5
+    num_negatives_train: 1
+    patience: 5
+    grad_clip_norm: 5.0
+    num_workers: 0
+
+  metrics:
+    top_k: [5, 10, 20]
+
+  models:
+    mf_bpr:
+      model_type: "mf"
+      embedding_dim: 64
+
+    ncf_bpr:
+      model_type: "ncf"
+      embedding_dim: 64
+      hidden_dims: [128, 64, 32]
+      dropout: 0.2
+
+    deepfm_bpr:
+      model_type: "deepfm"
+      dense_dim: 10
+      embedding_dim: 32
+      hidden_dims: [256, 128, 64]
+      dropout: 0.2
