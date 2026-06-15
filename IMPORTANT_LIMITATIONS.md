@@ -61,7 +61,7 @@ The current repository implements:
 - This is a heuristic semantic pipeline, so aspect labels and sentiment strengths may be noisy.
 - The item semantics are static and derived from historical reviews; they are not updated online per new review.
 
-## 6. Honest claims you can make
+## 6. Honest claims can be made
 
 Valid claims include:
 
@@ -70,9 +70,7 @@ Valid claims include:
 - It provides a known-user inference path with aspect-based explanations and a cold-user fallback strategy.
 - It includes a separate content-based cold-item user retrieval pipeline using item metadata and LSH.
 
-## 7. Do not claim
-
-Do not claim:
+## 7. The project does not claim
 
 - state-of-the-art performance,
 - a full solution for cold-start users/items at inference time,
