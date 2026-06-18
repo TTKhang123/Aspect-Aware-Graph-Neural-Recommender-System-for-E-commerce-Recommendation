@@ -1,4 +1,4 @@
-# Aspect-Aware Graph Neural Recommender System for Cold-Start E-commerce Recommendation
+# Aspect-Aware Graph Neural Recommender System for E-commerce Recommendation
 
 A practical, reproducible recommendation research pipeline that combines:
 
